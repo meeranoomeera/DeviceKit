@@ -1,4 +1,4 @@
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------=== //
 //
 // This source file is part of the DeviceKit open source project
 //
@@ -7,7 +7,7 @@
 // License: https://github.com/dennisweissmann/DeviceKit/blob/master/LICENSE
 // Contributors: https://github.com/dennisweissmann/DeviceKit#contributors
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------=== //
 
 @testable import DeviceKit
 import XCTest
@@ -15,6 +15,65 @@ import XCTest
 class DeviceKitTests: XCTestCase {
 
   let device = Device.current
+
+  #if os(iOS) || os(watchOS)
+  func testSeptember2026Devices() {
+    struct ExpectedDevice {
+      let model: Device
+      let identifiers: [String]
+      let diagonal: Double
+      let ratio: (Double, Double)
+      let ppi: Int
+    }
+    #if os(iOS)
+    let models: [ExpectedDevice] = [
+      ExpectedDevice(model: .iPhone18Pro, identifiers: ["iPhone19,2"], diagonal: 6.3, ratio: (9, 19.5), ppi: 460),
+      ExpectedDevice(model: .iPhone18ProMax, identifiers: ["iPhone19,3", "iPhone19,7"], diagonal: 6.9, ratio: (9, 19.5), ppi: 460)
+    ]
+    let chip = Device.CPU.a20Pro
+    XCTAssertEqual(chip.description, "A20 Pro")
+    // The deferred model and unverified identifiers must remain unknown.
+    for identifier in ["iPhone19,1", "iPhone19,4", "iPhone19,5", "iPhone19,6", "placeholder:iPhone18Pro", "placeholder:iPhone18ProMax"] {
+      XCTAssertEqual(Device.mapToDevice(identifier: identifier), .unknown(identifier))
+    }
+    #else
+    let models: [ExpectedDevice] = [
+      ExpectedDevice(model: .appleWatchSeries12_42mm, identifiers: ["Watch8,2", "Watch8,4"], diagonal: 1.79, ratio: (374, 446), ppi: 326),
+      ExpectedDevice(model: .appleWatchSeries12_46mm, identifiers: ["Watch8,3", "Watch8,5"], diagonal: 1.99, ratio: (416, 496), ppi: 326),
+      ExpectedDevice(model: .appleWatchUltra4, identifiers: ["Watch8,1"], diagonal: 2.04, ratio: (422, 514), ppi: 326)
+    ]
+    let chip = Device.CPU.s11
+    XCTAssertEqual(chip.description, "S11")
+    for identifier in ["Watch8,6", "Watch8,7", "Watch8,8", "Watch8,9", "placeholder:appleWatchSeries12_42mm", "placeholder:appleWatchSeries12_46mm", "placeholder:appleWatchUltra4"] {
+      XCTAssertEqual(Device.mapToDevice(identifier: identifier), .unknown(identifier))
+    }
+    #endif
+    for expected in models {
+      let model = expected.model
+      for identifier in expected.identifiers {
+        XCTAssertEqual(Device.mapToDevice(identifier: identifier), model, identifier)
+      }
+      #if os(iOS)
+      XCTAssertTrue(model.isPhone)
+      XCTAssertFalse(model.isPad)
+      #endif
+      XCTAssertTrue(Device.allRealDevices.contains(model))
+      XCTAssertTrue(Device.allSimulators.contains(.simulator(model)))
+      for variant in [model, .simulator(model)] {
+        XCTAssertEqual(variant.cpu, chip)
+        XCTAssertEqual(variant.diagonal, expected.diagonal)
+        XCTAssertEqual(variant.screenRatio.width, expected.ratio.0)
+        XCTAssertEqual(variant.screenRatio.height, expected.ratio.1)
+        XCTAssertEqual(variant.ppi, expected.ppi)
+        #if os(iOS)
+        XCTAssertTrue(variant.supportsWirelessCharging)
+        XCTAssertTrue(variant.hasEsimSupport)
+        XCTAssertTrue(variant.hasDualEsimSupport)
+        #endif
+      }
+    }
+  }
+  #endif
 
   func testDeviceSimulator() {
     #if os(macOS)
@@ -88,6 +147,13 @@ class DeviceKitTests: XCTestCase {
     XCTAssertEqual(Device.iPadPro11Inch2.cpu, Device.CPU.a12ZBionic)
     XCTAssertEqual(Device.iPadPro11Inch3.cpu, Device.CPU.m1)
     XCTAssertEqual(Device.iPadPro11Inch4.cpu, Device.CPU.m2)
+    XCTAssertEqual(Device.iPadPro11M4.cpu, Device.CPU.m4)
+    XCTAssertEqual(Device.iPadPro13M4.cpu, Device.CPU.m4)
+    XCTAssertEqual(Device.iPadPro11M5.cpu, Device.CPU.m5)
+    XCTAssertEqual(Device.iPadPro13M5.cpu, Device.CPU.m5)
+    XCTAssertEqual(Device.iPhone17e.cpu, Device.CPU.a19)
+    XCTAssertEqual(Device.iPadAir11M4.cpu, Device.CPU.m4)
+    XCTAssertEqual(Device.iPadAir13M4.cpu, Device.CPU.m4)
   #elseif os(tvOS)
     XCTAssertEqual(Device.appleTVHD.cpu, Device.CPU.a8)
     XCTAssertEqual(Device.appleTV4K.cpu, Device.CPU.a10XFusion)
@@ -101,6 +167,8 @@ class DeviceKitTests: XCTestCase {
     XCTAssertEqual(Device.CPU.a16Bionic.description, "A16 Bionic")
     XCTAssertEqual(Device.CPU.m1.description, "M1")
     XCTAssertEqual(Device.CPU.m2.description, "M2")
+    XCTAssertEqual(Device.CPU.m4.description, "M4")
+    XCTAssertEqual(Device.CPU.m5.description, "M5")
   }
   #endif
 
@@ -156,7 +224,7 @@ class DeviceKitTests: XCTestCase {
     XCTAssertTrue(Device.BatteryState.unplugged(2) > Device.BatteryState.charging(1))
   }
 
-  func testMapFromIdentifier() { // swiftlint:disable:this function_body_length
+  func testMapFromIdentifier() {
     XCTAssertEqual(Device.mapToDevice(identifier: "iPod5,1"), .iPodTouch5)
     XCTAssertEqual(Device.mapToDevice(identifier: "iPod7,1"), .iPodTouch6)
     XCTAssertEqual(Device.mapToDevice(identifier: "iPhone3,1"), .iPhone4)
@@ -232,6 +300,11 @@ class DeviceKitTests: XCTestCase {
     XCTAssertEqual(Device.mapToDevice(identifier: "iPad8,6"), .iPadPro12Inch3)
     XCTAssertEqual(Device.mapToDevice(identifier: "iPad8,7"), .iPadPro12Inch3)
     XCTAssertEqual(Device.mapToDevice(identifier: "iPad8,8"), .iPadPro12Inch3)
+    XCTAssertEqual(Device.mapToDevice(identifier: "iPhone18,5"), .iPhone17e)
+    XCTAssertEqual(Device.mapToDevice(identifier: "iPad16,8"), .iPadAir11M4)
+    XCTAssertEqual(Device.mapToDevice(identifier: "iPad16,9"), .iPadAir11M4)
+    XCTAssertEqual(Device.mapToDevice(identifier: "iPad16,10"), .iPadAir13M4)
+    XCTAssertEqual(Device.mapToDevice(identifier: "iPad16,11"), .iPadAir13M4)
   }
 
   func testScreenRatio() {
@@ -325,7 +398,7 @@ class DeviceKitTests: XCTestCase {
     XCTAssertEqual(Device.unknown(UUID().uuidString).diagonal, -1)
   }
 
-  func testDescription() { // swiftlint:disable:this function_body_length
+  func testDescription() {
     XCTAssertEqual(Device.iPodTouch5.description, "iPod touch (5th generation)")
     XCTAssertEqual(Device.iPodTouch6.description, "iPod touch (6th generation)")
     XCTAssertEqual(Device.iPodTouch7.description, "iPod touch (7th generation)")
@@ -355,11 +428,11 @@ class DeviceKitTests: XCTestCase {
     XCTAssertEqual(Device.iPad5.description, "iPad (5th generation)")
     XCTAssertEqual(Device.iPad6.description, "iPad (6th generation)")
     XCTAssertEqual(Device.iPadAir3.description, "iPad Air (3rd generation)")
-    XCTAssertEqual(Device.iPadMini.description, "iPad Mini")
-    XCTAssertEqual(Device.iPadMini2.description, "iPad Mini 2")
-    XCTAssertEqual(Device.iPadMini3.description, "iPad Mini 3")
-    XCTAssertEqual(Device.iPadMini4.description, "iPad Mini 4")
-    XCTAssertEqual(Device.iPadMini5.description, "iPad Mini (5th generation)")
+    XCTAssertEqual(Device.iPadMini.description, "iPad mini")
+    XCTAssertEqual(Device.iPadMini2.description, "iPad mini 2")
+    XCTAssertEqual(Device.iPadMini3.description, "iPad mini 3")
+    XCTAssertEqual(Device.iPadMini4.description, "iPad mini 4")
+    XCTAssertEqual(Device.iPadMini5.description, "iPad mini (5th generation)")
     XCTAssertEqual(Device.iPadPro9Inch.description, "iPad Pro (9.7-inch)")
     XCTAssertEqual(Device.iPadPro12Inch.description, "iPad Pro (12.9-inch)")
     XCTAssertEqual(Device.iPadPro12Inch2.description, "iPad Pro (12.9-inch) (2nd generation)")
@@ -461,6 +534,7 @@ class DeviceKitTests: XCTestCase {
       .iPhone16ProMax,
       .iPhone17ProMax,
       .iPhoneAir,
+      .iPhone18ProMax,
     ])
   }
 
@@ -480,6 +554,8 @@ class DeviceKitTests: XCTestCase {
       .iPhone16ProMax,
       .iPhone17Pro,
       .iPhone17ProMax,
+      .iPhone18Pro,
+      .iPhone18ProMax,
       .iPadPro9Inch,
       .iPadPro12Inch,
       .iPadPro12Inch2,
@@ -494,6 +570,8 @@ class DeviceKitTests: XCTestCase {
       .iPadPro12Inch6,
       .iPadPro11M4,
       .iPadPro13M4,
+      .iPadPro11M5,
+      .iPadPro13M5,
     ])
   }
 
@@ -528,6 +606,8 @@ class DeviceKitTests: XCTestCase {
       .iPhone17,
       .iPhone17Pro,
       .iPhone17ProMax,
+      .iPhone18Pro,
+      .iPhone18ProMax,
       .iPhoneAir,
     ]
     for device in Device.allRealDevices {
@@ -562,7 +642,10 @@ class DeviceKitTests: XCTestCase {
       .iPhone17,
       .iPhone17Pro,
       .iPhone17ProMax,
+      .iPhone18Pro,
+      .iPhone18ProMax,
       .iPhoneAir,
+      .iPhone17e,
       .iPad10,
       .iPadA16,
       .iPadAir5,
@@ -570,6 +653,8 @@ class DeviceKitTests: XCTestCase {
       .iPadAir13M2,
       .iPadAir11M3,
       .iPadAir13M3,
+      .iPadAir11M4,
+      .iPadAir13M4,
       .iPadMini6,
       .iPadMiniA17Pro,
       .iPadPro11Inch3,
@@ -578,10 +663,56 @@ class DeviceKitTests: XCTestCase {
       .iPadPro12Inch6,
       .iPadPro11M4,
       .iPadPro13M4,
+      .iPadPro11M5,
+      .iPadPro13M5,
     ]
     for device in Device.allRealDevices {
       XCTAssertTrue(device.has5gSupport == device.isOneOf(has5gDevices), "testHas5gSupport failed for \(device.description)")
     }
+  }
+
+  func testEsimSupportBoundaries() {
+    // eSIM starts with XS/XR; dual eSIM starts with iPhone 13 and SE (3rd generation).
+    let unsupported: [Device] = [.iPhoneX, .iPhone8, .iPhoneSE, .iPad6, .iPadAir2,
+                                 .iPadMini4, .iPadPro10Inch, .iPadPro12Inch2, .iPodTouch7,
+                                 .unknown("future device")]
+    let esimOnly: [Device] = [.iPhoneXS, .iPhoneXSMax, .iPhoneXR, .iPhone11, .iPhoneSE2,
+                              .iPhone12, .iPhone12Mini, .iPhone12Pro, .iPhone12ProMax,
+                              .iPad7, .iPadAir3, .iPadMini5, .iPadPro11Inch, .iPadPro12Inch3]
+    let dualEsim: [Device] = [.iPhone13, .iPhone13Mini, .iPhone13Pro, .iPhone13ProMax, .iPhoneSE3]
+    for model in unsupported + esimOnly + dualEsim {
+      for variant in [model, .simulator(model)] {
+        XCTAssertEqual(variant.hasEsimSupport, !unsupported.contains(model), "\(variant)")
+        XCTAssertEqual(variant.hasDualEsimSupport, dualEsim.contains(model), "\(variant)")
+      }
+    }
+  }
+
+  func testRecentDevicesEsimSupport() {
+    let phones: [Device] = [.iPhone16, .iPhone16Plus, .iPhone16Pro, .iPhone16ProMax, .iPhone16e,
+                            .iPhone17, .iPhone17Pro, .iPhone17ProMax, .iPhoneAir, .iPhone17e]
+    let pads: [Device] = [.iPadAir11M2, .iPadAir13M2, .iPadPro11M4, .iPadPro13M4,
+                          .iPadMiniA17Pro, .iPadA16, .iPadAir11M3, .iPadAir13M3,
+                          .iPadPro11M5, .iPadPro13M5, .iPadAir11M4, .iPadAir13M4]
+    for model in phones + pads {
+      for variant in [model, .simulator(model)] {
+        XCTAssertTrue(variant.hasEsimSupport, "\(variant)")
+        XCTAssertEqual(variant.hasDualEsimSupport, phones.contains(model), "\(variant)")
+      }
+    }
+  }
+
+  func testEsimDeviceLists() {
+    for model in Device.allDevicesWithDualEsimSupport {
+      XCTAssertTrue(Device.allDevicesWithEsimSupport.contains(model), "\(model)")
+      XCTAssertTrue(model.isPhone)
+    }
+    for model in Device.allRealDevices {
+      XCTAssertEqual(Device.allDevicesWithEsimSupport.contains(model), model.hasEsimSupport)
+      XCTAssertEqual(Device.allDevicesWithDualEsimSupport.contains(model), model.hasDualEsimSupport)
+    }
+    XCTAssertFalse(Device.allDevicesWithEsimSupport.contains(.iPhoneX))
+    XCTAssertFalse(Device.allDevicesWithDualEsimSupport.contains(.iPhone12))
   }
 
   // MARK: - volumes
@@ -616,16 +747,15 @@ class DeviceKitTests: XCTestCase {
       XCTAssertTrue(device.hasCamera)
       XCTAssertTrue(device.hasWideCamera || device.hasTelephotoCamera || device.hasUltraWideCamera)
     }
-    for device in Device.allPhones + Device.allPads + Device.allPods {
-      if !Device.allDevicesWithCamera.contains(device) {
-        XCTAssertFalse(device.cameras.contains(.wide))
-        XCTAssertFalse(device.cameras.contains(.telephoto))
-        XCTAssertFalse(device.cameras.contains(.ultraWide))
-        XCTAssertFalse(device.hasCamera)
-        XCTAssertFalse(device.hasWideCamera)
-        XCTAssertFalse(device.hasTelephotoCamera)
-        XCTAssertFalse(device.hasUltraWideCamera)
-      }
+    let devices = Device.allPhones + Device.allPads + Device.allPods
+    for device in devices where !Device.allDevicesWithCamera.contains(device) {
+      XCTAssertFalse(device.cameras.contains(.wide))
+      XCTAssertFalse(device.cameras.contains(.telephoto))
+      XCTAssertFalse(device.cameras.contains(.ultraWide))
+      XCTAssertFalse(device.hasCamera)
+      XCTAssertFalse(device.hasWideCamera)
+      XCTAssertFalse(device.hasTelephotoCamera)
+      XCTAssertFalse(device.hasUltraWideCamera)
     }
     for device in Device.allDevicesWithWideCamera {
       XCTAssertTrue(device.cameras.contains(.wide))
@@ -658,6 +788,8 @@ class DeviceKitTests: XCTestCase {
       .iPhone16ProMax,
       .iPhone17Pro,
       .iPhone17ProMax,
+      .iPhone18Pro,
+      .iPhone18ProMax,
       .iPadPro11Inch2,
       .iPadPro12Inch4,
       .iPadPro11Inch3,
@@ -666,6 +798,8 @@ class DeviceKitTests: XCTestCase {
       .iPadPro12Inch6,
       .iPadPro11M4,
       .iPadPro13M4,
+      .iPadPro11M5,
+      .iPadPro13M5,
     ]
     for device in Device.allRealDevices {
       XCTAssertTrue(device.hasLidarSensor == device.isOneOf(lidarDevices), "testLidarValues failed for \(device.description)")
@@ -686,7 +820,10 @@ class DeviceKitTests: XCTestCase {
       .iPhone17,
       .iPhone17Pro,
       .iPhone17ProMax,
+      .iPhone18Pro,
+      .iPhone18ProMax,
       .iPhoneAir,
+      .iPhone17e,
       .iPad10,
       .iPadA16,
       .iPadAir4,
@@ -695,6 +832,8 @@ class DeviceKitTests: XCTestCase {
       .iPadAir13M2,
       .iPadAir11M3,
       .iPadAir13M3,
+      .iPadAir11M4,
+      .iPadAir13M4,
       .iPadMini6,
       .iPadMiniA17Pro,
       .iPadPro11Inch,
@@ -707,10 +846,62 @@ class DeviceKitTests: XCTestCase {
       .iPadPro12Inch6,
       .iPadPro11M4,
       .iPadPro13M4,
+      .iPadPro11M5,
+      .iPadPro13M5,
     ]
     for device in Device.allRealDevices {
       XCTAssertTrue(device.hasUSBCConnectivity == device.isOneOf(usbCDevices), "testHasUSBCConnectivity failed for \(device.description)")
     }
+  }
+
+  func testApplePencilSupport() {
+    // Test iPad (10th gen) - Supports Apple Pencil (1st gen) and Apple Pencil (USB-C)
+    XCTAssertTrue(Device.iPad10.applePencilSupport.contains(.firstGeneration))
+    XCTAssertTrue(Device.iPad10.applePencilSupport.contains(.firstGenerationUsbC))
+    XCTAssertFalse(Device.iPad10.applePencilSupport.contains(.secondGeneration))
+    XCTAssertFalse(Device.iPad10.applePencilSupport.contains(.pro))
+
+    // Test iPad (A16) - Supports Apple Pencil (1st gen) and Apple Pencil (USB-C)
+    XCTAssertTrue(Device.iPadA16.applePencilSupport.contains(.firstGeneration))
+    XCTAssertTrue(Device.iPadA16.applePencilSupport.contains(.firstGenerationUsbC))
+    XCTAssertFalse(Device.iPadA16.applePencilSupport.contains(.secondGeneration))
+    XCTAssertFalse(Device.iPadA16.applePencilSupport.contains(.pro))
+
+    // Test iPad Air 11" (M2) - Supports Apple Pencil Pro and Apple Pencil (USB-C)
+    XCTAssertFalse(Device.iPadAir11M2.applePencilSupport.contains(.firstGeneration))
+    XCTAssertTrue(Device.iPadAir11M2.applePencilSupport.contains(.firstGenerationUsbC))
+    XCTAssertFalse(Device.iPadAir11M2.applePencilSupport.contains(.secondGeneration))
+    XCTAssertTrue(Device.iPadAir11M2.applePencilSupport.contains(.pro))
+
+    // Test iPad Air 13" (M2) - Supports Apple Pencil Pro and Apple Pencil (USB-C)
+    XCTAssertFalse(Device.iPadAir13M2.applePencilSupport.contains(.firstGeneration))
+    XCTAssertTrue(Device.iPadAir13M2.applePencilSupport.contains(.firstGenerationUsbC))
+    XCTAssertFalse(Device.iPadAir13M2.applePencilSupport.contains(.secondGeneration))
+    XCTAssertTrue(Device.iPadAir13M2.applePencilSupport.contains(.pro))
+
+    // Test iPad Air 11" (M3) - Supports Apple Pencil Pro and Apple Pencil (USB-C)
+    XCTAssertFalse(Device.iPadAir11M3.applePencilSupport.contains(.firstGeneration))
+    XCTAssertTrue(Device.iPadAir11M3.applePencilSupport.contains(.firstGenerationUsbC))
+    XCTAssertFalse(Device.iPadAir11M3.applePencilSupport.contains(.secondGeneration))
+    XCTAssertTrue(Device.iPadAir11M3.applePencilSupport.contains(.pro))
+
+    // Test iPad Air 13" (M3) - Supports Apple Pencil Pro and Apple Pencil (USB-C)
+    XCTAssertFalse(Device.iPadAir13M3.applePencilSupport.contains(.firstGeneration))
+    XCTAssertTrue(Device.iPadAir13M3.applePencilSupport.contains(.firstGenerationUsbC))
+    XCTAssertFalse(Device.iPadAir13M3.applePencilSupport.contains(.secondGeneration))
+    XCTAssertTrue(Device.iPadAir13M3.applePencilSupport.contains(.pro))
+
+    // Test iPad Pro 11" (M4) - Supports Apple Pencil Pro and Apple Pencil (USB-C)
+    XCTAssertFalse(Device.iPadPro11M4.applePencilSupport.contains(.firstGeneration))
+    XCTAssertTrue(Device.iPadPro11M4.applePencilSupport.contains(.firstGenerationUsbC))
+    XCTAssertFalse(Device.iPadPro11M4.applePencilSupport.contains(.secondGeneration))
+    XCTAssertTrue(Device.iPadPro11M4.applePencilSupport.contains(.pro))
+
+    // Test iPad Pro 13" (M4) - Supports Apple Pencil Pro and Apple Pencil (USB-C)
+    XCTAssertFalse(Device.iPadPro13M4.applePencilSupport.contains(.firstGeneration))
+    XCTAssertTrue(Device.iPadPro13M4.applePencilSupport.contains(.firstGenerationUsbC))
+    XCTAssertFalse(Device.iPadPro13M4.applePencilSupport.contains(.secondGeneration))
+    XCTAssertTrue(Device.iPadPro13M4.applePencilSupport.contains(.pro))
   }
 
   #endif

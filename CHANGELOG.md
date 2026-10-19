@@ -1,5 +1,78 @@
 # Changelog
 
+## Unreleased
+
+## Version 5.9.0
+
+Releasedate: 2026-09-22
+
+```ruby
+pod 'DeviceKit', '~> 5.9'
+```
+
+### New September 2026 devices
+
+This version adds support for iPhone 18 Pro, iPhone 18 Pro Max, Apple Watch Series 12 and Apple Watch Ultra 4, including hardware identifiers, display metrics and technical specification links: ([#512](https://github.com/devicekit/DeviceKit/pull/512))
+
+| Device | Case value |
+| --- | --- |
+| iPhone 18 Pro | `Device.iPhone18Pro` |
+| iPhone 18 Pro Max | `Device.iPhone18ProMax` |
+| Apple Watch Series 12 42mm | `Device.appleWatchSeries12_42mm` |
+| Apple Watch Series 12 46mm | `Device.appleWatchSeries12_46mm` |
+| Apple Watch Ultra 4 | `Device.appleWatchUltra4` |
+
+### New features
+
+- Add `allDevicesWithEsimSupport` / `hasEsimSupport` and `allDevicesWithDualEsimSupport` / `hasDualEsimSupport`, including simulator support. Cover supported iPhones through iPhone 17e and iPads through iPad Air (M4) and iPad Pro (M5), exclude iPhone X, and document regional and Wi-Fi + Cellular limitations. ([#382](https://github.com/devicekit/DeviceKit/pull/382))
+
+### Bug fixes
+
+- Update Apple support links for iPhone and iPad models, correct the iPhone 14 Pro Max pixel density to 460 ppi, and correct the iPad Air 11-inch (M2) aspect ratio to 41:59. ([#497](https://github.com/devicekit/DeviceKit/pull/497))
+
+### Maintenance
+
+- Simplify GYB device definitions with named feature parameters and defaults for unsupported features, preserving the generated Swift output. ([#508](https://github.com/devicekit/DeviceKit/pull/508))
+
+### Contributors
+
+Thanks to all the contributers of this release!
+- [furiosFast](https://github.com/furiosFast)
+- [kudit](https://github.com/kudit)
+
+## Version 5.8.0
+
+Releasedate: 2026-03-03
+
+```ruby
+pod 'DeviceKit', '~> 5.8'
+```
+
+### New devices
+
+- Add support for M5 iPad Pro models. ([#467](https://github.com/devicekit/DeviceKit/pull/467))
+- Add support for Apple Watch SE (3rd generation) ([#473](https://github.com/devicekit/DeviceKit/pull/473))
+- Add support for iPhone 17e and iPad Air (M4)
+
+| Device | Case value |
+| --- | --- |
+| iPad Pro 11-inch (M5) | `Device.iPadPro11M5` |
+| iPad Pro 13-inch (M5) | `Device.iPadPro13M5` |
+| Apple Watch SE (3rd generation) 40mm | `Device.appleWatchSE3_40mm` |
+| Apple Watch SE (3rd generation) 44mm | `Device.appleWatchSE3_44mm` |
+| iPhone 17e | `Device.iPhone17e` |
+| iPad Air (11-inch) (M4) | `Device.iPadAir11M4` |
+| iPad Air (13-inch) (M4) | `Device.iPadAir13M4` |
+
+### Bug fixes
+
+- Fixed iPhone Air incorrectly marked as having ultra-wide camera. ([#463](https://github.com/devicekit/DeviceKit/issues/463))
+- Fixed Apple Pencil compatibility for M4 iPad Pro, M2/M3 iPad Air, iPad (10th gen), and iPad (A16) models. ([#474](https://github.com/devicekit/DeviceKit/pull/474))
+- Fixed `ApplePencilSupport` OptionSet raw values so that `.firstGenerationUsbC` no longer incorrectly overlaps with `.firstGeneration` and `.secondGeneration`. ([#474](https://github.com/devicekit/DeviceKit/pull/474))
+- Fixed naming of iPad mini devices to match Apple's official naming (lowercase "mini"). ([#458](https://github.com/devicekit/DeviceKit/issues/458))
+- Exclude unhandled files (`Info.plist`, `Device.swift.gyb`) to suppress SPM warnings. ([#484](https://github.com/devicekit/DeviceKit/pull/484))
+- Fixed M5 iPad Pro device identifiers and added image URLs. ([#480](https://github.com/devicekit/DeviceKit/pull/480))
+
 ## Version 5.7.0
 
 Releasedate: 2025-09-12
@@ -26,7 +99,7 @@ This version adds support for the iPhone 17 series, Apple Watch Ultra 3 and Appl
 
 - Missing device identifiers for Apple Watch Series 9 were added.
 - Docs for Apple Watch Series 9 was updated to include specs links
-- Fixed Apple Pencil support for iPad Mini (A17 Pro).
+- Fixed Apple Pencil support for iPad mini (A17 Pro).
 
 Thanks to all the contributers of this release!
 - [Jager-yoo](https://github.com/Jager-yoo)
@@ -46,7 +119,7 @@ This version adds support for the devices announced in October 2024: ([#429](htt
 
 | Device | Case value |
 | --- | --- |
-| iPad Mini (A17 Pro) | `Device.iPadMiniA17Pro` |
+| iPad mini (A17 Pro) | `Device.iPadMiniA17Pro` |
 
 ### New February 2025 devices
 
@@ -713,8 +786,8 @@ pod 'DeviceKit', '~> 1.13'
 ```
 
 ### New iPads
-Added new iPad Mini (5th generation) and iPad Air (3rd generation)
+Added new iPad mini (5th generation) and iPad Air (3rd generation)
 ```swift
-Device.iPadMini5 // iPad Mini (5th generation)
+Device.iPadMini5 // iPad mini (5th generation)
 Device.iPadAir3 // iPad Air (3rd generation)
 ```

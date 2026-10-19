@@ -1,5 +1,5 @@
 // swift-tools-version:5.3
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------=== //
 //
 // This source file is part of the DeviceKit open source project
 //
@@ -8,7 +8,7 @@
 // License: https://github.com/dennisweissmann/DeviceKit/blob/master/LICENSE
 // Contributors: https://github.com/dennisweissmann/DeviceKit#contributors
 //
-//===----------------------------------------------------------------------===//
+// ===----------------------------------------------------------------------=== //
 
 import PackageDescription
 
@@ -34,12 +34,14 @@ let package = Package(
             name: "DeviceKit",
             dependencies: [],
             path: "Source",
-            resources: [.process("PrivacyInfo.xcprivacy")]
+            exclude: ["Info.plist", "Device.swift.gyb"],
+            resources: [.process("PrivacyInfo.xcprivacy")],
         ),
         .testTarget(
             name: "DeviceKitTests",
             dependencies: ["DeviceKit"],
             path: "Tests",
+            exclude: ["Info.plist"],
             resources: [.process("../Source/PrivacyInfo.xcprivacy")]
         )
     ],
